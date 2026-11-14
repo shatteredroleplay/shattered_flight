@@ -1,7 +1,7 @@
 fx_version 'cerulean'
 game 'gta5'
 
-description 'Shattered: avancerad helikopterstyrning för alla helikoptrar'
+description 'Shattered: realistic flight controls for helicopters and planes'
 
 shared_script 'config.lua'
 

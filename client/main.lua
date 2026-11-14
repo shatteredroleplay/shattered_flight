@@ -8,7 +8,7 @@ RegisterCommand('-shattered_heli_look', function()
 	freeLook = false
 end, false)
 
-RegisterKeyMapping('+shattered_heli_look', 'Helikopter: fri kamera (håll)', 'keyboard', Config.FreeLookKey)
+RegisterKeyMapping('+shattered_heli_look', 'Flight: free look (hold)', 'keyboard', Config.FreeLookKey)
 
 local CAMERA_MODES <const> = { [0] = 1, [1] = 2, [2] = 4, [4] = 0 }
 local NEXT_CAMERA <const> = 0
@@ -22,7 +22,7 @@ RegisterCommand('shattered_flight_camera', function()
 	SetCamViewModeForContext(context, CAMERA_MODES[GetCamViewModeForContext(context)] or 0)
 end, false)
 
-RegisterKeyMapping('shattered_flight_camera', 'Flyg: byt kameravy', 'keyboard', Config.CameraKey)
+RegisterKeyMapping('shattered_flight_camera', 'Flight: cycle camera view', 'keyboard', Config.CameraKey)
 
 local GetPilotVehicle = function()
 	local ped = PlayerPedId()
