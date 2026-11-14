@@ -1,14 +1,12 @@
 # shattered_flight
 
-Realistic flight controls for every helicopter and plane in FiveM. Made by [Shattered](https://www.shattered.se/).
+Realistic flight controls for all helicopters and planes in FiveM. Made by [Shattered](https://www.shattered.se/).
+Made to feel like Wardogs/Battlefield flight controls.
 
 ## Features
 
 - Helicopter physics with collective, cyclic and pedals, rotor RPM, power limits, ground effect, vortex ring state and autorotation
 - Plane physics with lift, stall, drag, thrust and G-limits
-- Weight-based handling: heavy aircraft feel heavy
-- Damage from hard landings and overspeed
-- Optional flight assists: stability, envelope protection, turn coordination and auto-hover
 - Mouse, keyboard and gamepad support
 - Hold-to-free-look camera (default `Left Alt`)
 - Cycle camera distance like GTA's own camera (default `V`)
