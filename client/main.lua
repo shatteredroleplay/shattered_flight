@@ -75,7 +75,7 @@ CreateThread(function()
 			local owner = NetworkHasControlOfEntity(vehicle)
 			if (not owner) then
 				local now = GetGameTimer()
-				if (now - lastRequest >= Config.ControlRequestInterval) then
+				if (now - lastRequest >= 250) then
 					NetworkRequestControlOfEntity(vehicle)
 					lastRequest = now
 				end
@@ -91,7 +91,7 @@ CreateThread(function()
 			local look = freeLook or not IsUsingKeyboard(0)
 
 			if (plane) then
-				local animate = Config.Plane.AnimateSurfaces
+				local animate = Config.AnimateSurfaces
 
 				if (animate) then
 					DisablePlaneControls(look)

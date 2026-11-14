@@ -78,41 +78,38 @@ GetProfile = function(model)
 end
 
 local Scale = function(ratio, exponent)
-	local cfg = Config.Weight
-
-	return Clamp(ratio ^ -exponent, cfg.Min, cfg.Max)
+	return Clamp(ratio ^ -exponent, 0.4, 1.4)
 end
 
 BuildTune = function(vehicle, profile)
-	local cfg = Config.Weight
 	local mass = GetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fMass')
 	local inertia = GetVehicleHandlingVector(vehicle, 'CHandlingData', 'vecInertiaMultiplier')
 
-	if (not cfg.Enabled or not mass or mass <= 0.0) then
-		mass = cfg.Reference
+	if (not mass or mass <= 0.0) then
+		mass = 4000.0
 	end
 
-	if (not cfg.Enabled or not inertia or inertia.x <= 0.0 or inertia.y <= 0.0 or inertia.z <= 0.0) then
+	if (not inertia or inertia.x <= 0.0 or inertia.y <= 0.0 or inertia.z <= 0.0) then
 		inertia = vector3(1.0, 1.0, 1.0)
 	end
 
-	local ratio = mass / cfg.Reference
-	local rate, response = Scale(ratio, cfg.RateExponent), Scale(ratio, cfg.ResponseExponent)
+	local ratio = mass / 4000.0
+	local rate, response = Scale(ratio, 0.6), Scale(ratio, 0.5)
 
 	return {
 		mass = mass,
 		inertia = inertia,
 		weight = rate,
-		pitchRate = profile.pitchRate * rate / inertia.x ^ cfg.InertiaRate,
-		rollRate = profile.rollRate * rate / inertia.y ^ cfg.InertiaRate,
-		yawRate = profile.yawRate * rate / inertia.z ^ cfg.InertiaRate,
+		pitchRate = profile.pitchRate * rate / inertia.x ^ 0.3,
+		rollRate = profile.rollRate * rate / inertia.y ^ 0.3,
+		yawRate = profile.yawRate * rate / inertia.z ^ 0.3,
 		response = vector3(
-			profile.response * response / inertia.x ^ cfg.InertiaResponse,
-			profile.response * response / inertia.y ^ cfg.InertiaResponse,
-			profile.response * response / inertia.z ^ cfg.InertiaResponse
+			profile.response * response / inertia.x ^ 0.5,
+			profile.response * response / inertia.y ^ 0.5,
+			profile.response * response / inertia.z ^ 0.5
 		),
-		collectiveResponse = profile.collectiveResponse * Scale(ratio, cfg.CollectiveExponent),
-		collectiveGain = profile.collectiveGain * Scale(ratio, cfg.GainExponent),
+		collectiveResponse = profile.collectiveResponse * Scale(ratio, 0.4),
+		collectiveGain = profile.collectiveGain * Scale(ratio, 0.15),
 	}
 end
 
@@ -127,7 +124,7 @@ GetKind = function(vehicle)
 		return 'heli'
 	end
 
-	if (Config.Plane.Enabled and IsThisModelAPlane(model)) then
+	if (Config.EnablePlanes and IsThisModelAPlane(model)) then
 		return 'plane'
 	end
 

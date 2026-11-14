@@ -48,7 +48,7 @@ FeedSurfaces = function(input)
 end
 
 Deadzone = function(value)
-	local dz = Config.Input.GamepadDeadzone
+	local dz = 0.12
 	if (math_abs(value) < dz) then
 		return 0.0
 	end
@@ -57,7 +57,7 @@ Deadzone = function(value)
 end
 
 Expo = function(value)
-	local curved = math_abs(value) ^ Config.Input.Expo
+	local curved = math_abs(value) ^ 1.5
 
 	return value < 0.0 and -curved or curved
 end
@@ -76,11 +76,11 @@ Isolate = function(x, y)
 	return x * (1.0 - isolation * (1.0 - ax / ay)), y
 end
 
-ReadMouse = function(dt, cfg, invert)
+ReadMouse = function(dt, invert)
 	local mx, my = GetDisabledControlNormal(0, LOOK_LR), GetDisabledControlNormal(0, LOOK_UD)
 	mx, my = Isolate(mx, my)
 
-	local scale = cfg.MouseRate * Config.Controls.sensitivity / math_max(dt, 0.001)
+	local scale = 0.5 * Config.Controls.sensitivity / math_max(dt, 0.001)
 	local horizontal = Clamp(mx * scale, -1.0, 1.0)
 	local pitch = Clamp(-my * scale * invert * Config.Controls.pitchSens, -1.0, 1.0)
 
@@ -92,7 +92,6 @@ ReadMouse = function(dt, cfg, invert)
 end
 
 Read = function(dt, mouseToCamera, hold)
-	local cfg = Config.Input
 	local keyboard = IsUsingKeyboard(0)
 	local now = GetGameTimer()
 	local invert = Config.Controls.invertY and -1.0 or 1.0
@@ -101,11 +100,11 @@ Read = function(dt, mouseToCamera, hold)
 	local pitch, roll, yaw = 0.0, 0.0, 0.0
 
 	if (keyboard) then
-		smooth.keys = Approach(smooth.keys, keys, cfg.KeySmoothing, dt)
+		smooth.keys = Approach(smooth.keys, keys, 4.0, dt)
 
 		if (not mouseToCamera) then
 			local moved
-			pitch, roll, yaw, moved = ReadMouse(dt, cfg, invert)
+			pitch, roll, yaw, moved = ReadMouse(dt, invert)
 			if (moved and (pitch ~= 0.0 or roll ~= 0.0)) then
 				lastCyclic = now
 			end
@@ -120,13 +119,13 @@ Read = function(dt, mouseToCamera, hold)
 			yaw = smooth.keys
 		end
 
-		smooth.pitch = Approach(smooth.pitch, pitch, cfg.MouseSmoothing, dt)
-		smooth.roll = Approach(smooth.roll, roll, cfg.MouseSmoothing, dt)
-		smooth.yaw = Approach(smooth.yaw, yaw, cfg.MouseSmoothing, dt)
+		smooth.pitch = Approach(smooth.pitch, pitch, 16.0, dt)
+		smooth.roll = Approach(smooth.roll, roll, 16.0, dt)
+		smooth.yaw = Approach(smooth.yaw, yaw, 16.0, dt)
 	else
 		pitch = Expo(Deadzone(-GetDisabledControlNormal(0, PITCH_UD))) * invert * Config.Controls.pitchSens
 		roll = Expo(Deadzone(GetDisabledControlNormal(0, ROLL_LR))) * Config.Controls.rollSens
-		smooth.keys = Approach(smooth.keys, keys, cfg.KeySmoothing, dt)
+		smooth.keys = Approach(smooth.keys, keys, 4.0, dt)
 
 		if (pitch ~= 0.0 or roll ~= 0.0) then
 			lastCyclic = now
@@ -138,7 +137,7 @@ Read = function(dt, mouseToCamera, hold)
 	result.pitch, result.roll, result.yaw = smooth.pitch, smooth.roll, smooth.yaw
 	result.collective = GetDisabledControlNormal(0, THROTTLE_UP) - GetDisabledControlNormal(0, THROTTLE_DOWN)
 	result.hold = hold and keyboard
-	result.cyclicIdle = now - lastCyclic > 150 and math_abs(smooth.pitch) + math_abs(smooth.roll) < Config.Assists.StabilityDeadzone
+	result.cyclicIdle = now - lastCyclic > 150 and math_abs(smooth.pitch) + math_abs(smooth.roll) < 0.15
 
 	return result
 end

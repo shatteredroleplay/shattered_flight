@@ -52,20 +52,18 @@ Active = function()
 end
 
 UpdateRotor = function(vehicle, profile, dt, grounded, vUp, running, demand, available)
-	local cfg = Config.Autorotation
-
 	if (running) then
-		local target = math_max(Config.Power.MinRpm, 1.0 - profile.droop * math_max(0.0, demand - available))
+		local target = math_max(0.75, 1.0 - profile.droop * math_max(0.0, demand - available))
 
 		if (state.rpm < target) then
 			state.rpm = math_min(target, state.rpm + dt / profile.spoolTime)
 		else
 			state.rpm = Approach(state.rpm, target, profile.rpmResponse, dt)
 		end
-	elseif (cfg.Enabled and not grounded) then
-		local rpm = state.rpm - cfg.Decay * dt
-		rpm = rpm + cfg.Gain * math_max(0.0, -vUp) * dt
-		rpm = rpm - cfg.CollectiveDrain * math_max(0.0, state.collective) * dt
+	elseif (not grounded) then
+		local rpm = state.rpm - 0.12 * dt
+		rpm = rpm + 0.035 * math_max(0.0, -vUp) * dt
+		rpm = rpm - 0.25 * math_max(0.0, state.collective) * dt
 		state.rpm = Clamp(rpm, 0.0, 1.05)
 	else
 		state.rpm = math_max(0.0, state.rpm - dt / profile.spoolTime)
@@ -79,21 +77,20 @@ UpdateRotor = function(vehicle, profile, dt, grounded, vUp, running, demand, ava
 		return state.rpm * state.rpm
 	end
 
-	if (state.rpm < cfg.MinRpm) then
+	if (state.rpm < 0.25) then
 		return 0.0
 	end
 
-	return state.rpm * state.rpm * cfg.LiftScale
+	return state.rpm * state.rpm * 0.75
 end
 
 local HardLanding = function(vehicle, excess, up)
-	local cfg = Config.Landing
-	local damage = excess * cfg.Damage * (1.0 + cfg.TiltFactor * (1.0 - math_max(0.0, up.z)))
+	local damage = excess * 40.0 * (1.0 + 1.5 * (1.0 - math_max(0.0, up.z)))
 
-	SetVehicleEngineHealth(vehicle, math_max(cfg.EngineFloor, GetVehicleEngineHealth(vehicle) - damage))
-	SetVehicleBodyHealth(vehicle, math_max(0.0, GetVehicleBodyHealth(vehicle) - damage * cfg.BodyScale))
-	SetHeliMainRotorHealth(vehicle, math_max(0.0, GetHeliMainRotorHealth(vehicle) - damage * cfg.RotorScale))
-	SetHeliTailRotorHealth(vehicle, math_max(0.0, GetHeliTailRotorHealth(vehicle) - damage * cfg.TailScale))
+	SetVehicleEngineHealth(vehicle, math_max(50.0, GetVehicleEngineHealth(vehicle) - damage))
+	SetVehicleBodyHealth(vehicle, math_max(0.0, GetVehicleBodyHealth(vehicle) - damage))
+	SetHeliMainRotorHealth(vehicle, math_max(0.0, GetHeliMainRotorHealth(vehicle) - damage * 0.6))
+	SetHeliTailRotorHealth(vehicle, math_max(0.0, GetHeliTailRotorHealth(vehicle) - damage * 0.4))
 
 	LandingShake(state, excess)
 
@@ -110,14 +107,14 @@ end
 
 Update = function(dt, input, preset, owner)
 	local vehicle, profile, tune = state.vehicle, state.profile, state.tune
-	local g = Config.Gravity
+	local g = 9.81
 
 	local forward, right, up = GetEntityMatrix(vehicle)
 	local actualVel = GetEntityVelocity(vehicle)
 	local actualAng = ToLocal(GetEntityRotationVelocity(vehicle), right, forward, up)
 	local grounded = not IsEntityInAir(vehicle)
 
-	local excess = TrackLanding(state, vehicle, dt, grounded, owner, Config.Landing.MaxHeight)
+	local excess = TrackLanding(state, vehicle, dt, grounded, owner, 4.0)
 	if (excess) then
 		HardLanding(vehicle, excess, up)
 	end
@@ -132,16 +129,15 @@ Update = function(dt, input, preset, owner)
 
 	state.collective = Approach(state.collective, input.collective, tune.collectiveResponse, dt)
 
-	local power = Config.Power
 	local engine = Clamp(GetVehicleEngineHealth(vehicle) / 1000.0, 0.0, 1.0)
-	local available = profile.power * (power.MinPower + (1.0 - power.MinPower) * engine)
+	local available = profile.power * (0.55 + 0.45 * engine)
 	local demand = math_max(0.0, profile.hoverLift + state.collective * tune.collectiveGain)
 
 	local liftFactor = UpdateRotor(vehicle, profile, dt, grounded, localVel.z, running, demand, available)
 
 	local health = Clamp(GetHeliMainRotorHealth(vehicle) / 1000.0, 0.0, 1.0)
-	local healthFactor = Config.Damage.MinLift + (1.0 - Config.Damage.MinLift) * health
-	local tailDead = GetHeliTailRotorHealth(vehicle) <= Config.Damage.TailRotorDead
+	local healthFactor = 0.45 + 0.55 * health
+	local tailDead = GetHeliTailRotorHealth(vehicle) <= 50.0
 
 	local etl = 1.0 + profile.etl.bonus * Smoothstep(profile.etl.start, profile.etl.full, horizontal)
 
@@ -170,7 +166,7 @@ Update = function(dt, input, preset, owner)
 
 	local lift = g * demand * etl * (1.0 + inflow) * (1.0 + groundEffect) * compensation * (1.0 - vrs.loss * state.vrs) * liftFactor * healthFactor
 
-	if (not owner or (grounded and (state.collective < Config.LiftoffCollective or up.z * lift <= g))) then
+	if (not owner or (grounded and (state.collective < 0.05 or up.z * lift <= g))) then
 		state.vel, state.ang = actualVel, actualAng
 		SetShake(state, 0.0)
 		return
@@ -187,7 +183,7 @@ Update = function(dt, input, preset, owner)
 	tx = tx + math_rad(profile.blowback) * Smoothstep(profile.vne * 0.7, profile.vne, localVel.y)
 
 	if (tailDead) then
-		tz = Config.Damage.TailSpin * (0.4 + math_max(0.0, state.collective)) * liftFactor
+		tz = 2.2 * (0.4 + math_max(0.0, state.collective)) * liftFactor
 	else
 		tz = tz - math_rad(profile.torqueYaw) * math_max(0.0, state.collective) * (1.0 - Smoothstep(5.0, 20.0, horizontal)) * liftFactor
 	end
@@ -250,12 +246,11 @@ Update = function(dt, input, preset, owner)
 
 	local over = speed - profile.vne
 	if (over > 0.0) then
-		SetHeliMainRotorHealth(vehicle, math_max(0.0, GetHeliMainRotorHealth(vehicle) - over * Config.Damage.Overspeed * dt))
+		SetHeliMainRotorHealth(vehicle, math_max(0.0, GetHeliMainRotorHealth(vehicle) - over * 6.0 * dt))
 	end
 
-	local feel = Config.Feel
 	local overspeed = Smoothstep(profile.vne * 0.95, profile.vne * 1.15, speed)
 	local droop = running and Clamp((demand - available) / 0.3, 0.0, 1.0) or 0.0
 
-	SetShake(state, math_max(state.vrs * feel.Vrs, overspeed * feel.Overspeed, droop * feel.Droop))
+	SetShake(state, math_max(state.vrs * 1.5, overspeed, droop * 0.4))
 end

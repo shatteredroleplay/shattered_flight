@@ -55,11 +55,10 @@ local TrackDrift = function(dt, actualVel, actualAng)
 end
 
 local HardLanding = function(vehicle, excess)
-	local cfg = Config.Landing
-	local damage = excess * cfg.Damage
+	local damage = excess * 40.0
 
-	SetVehicleEngineHealth(vehicle, math_max(cfg.EngineFloor, GetVehicleEngineHealth(vehicle) - damage))
-	SetVehicleBodyHealth(vehicle, math_max(0.0, GetVehicleBodyHealth(vehicle) - damage * cfg.BodyScale))
+	SetVehicleEngineHealth(vehicle, math_max(50.0, GetVehicleEngineHealth(vehicle) - damage))
+	SetVehicleBodyHealth(vehicle, math_max(0.0, GetVehicleBodyHealth(vehicle) - damage))
 
 	LandingShake(state, excess)
 
@@ -121,24 +120,23 @@ end
 
 PlaneUpdate = function(dt, input, preset, owner)
 	local vehicle, profile = state.vehicle, state.profile
-	local cfg = Config.Plane
-	local g = Config.Gravity
+	local g = 9.81
 
 	local forward, right, up = GetEntityMatrix(vehicle)
 	local actualVel = GetEntityVelocity(vehicle)
 	local actualAng = ToLocal(GetEntityRotationVelocity(vehicle), right, forward, up)
 	local grounded = not IsEntityInAir(vehicle) or IsEntityInWater(vehicle)
 
-	local excess = TrackLanding(state, vehicle, dt, grounded, owner, cfg.LandingHeight)
+	local excess = TrackLanding(state, vehicle, dt, grounded, owner, 8.0)
 	if (excess) then
 		HardLanding(vehicle, excess)
 	end
 
-	local hovering = GetVehicleFlightNozzlePosition(vehicle) > cfg.VtolNozzle
+	local hovering = GetVehicleFlightNozzlePosition(vehicle) > 0.5
 
 	if (grounded or hovering) then
 		state.flying = false
-	elseif (not state.flying and GetEntityHeightAboveGround(vehicle) > cfg.TakeoverHeight) then
+	elseif (not state.flying and GetEntityHeightAboveGround(vehicle) > 1.5) then
 		state.flying = true
 	end
 
@@ -155,10 +153,10 @@ PlaneUpdate = function(dt, input, preset, owner)
 
 		if (owner and not hovering and input.pitch ~= 0.0) then
 			local stall = profile.stallSpeed
-			local authority = Smoothstep(stall * cfg.RotateStart, stall * cfg.RotateFull, #actualVel)
+			local authority = Smoothstep(stall * 0.4, stall * 0.8, #actualVel)
 
 			if (authority > 0.0) then
-				local target = -input.pitch * math_rad(profile.pitchRate) * cfg.GroundPitch * authority
+				local target = -input.pitch * math_rad(profile.pitchRate) * 0.5 * authority
 				state.ang = vector3(Approach(actualAng.x, target, profile.response.pitch, dt), actualAng.y, actualAng.z)
 
 				local worldAng = ToWorld(state.ang, right, forward, up)
@@ -236,7 +234,7 @@ PlaneUpdate = function(dt, input, preset, owner)
 
 	local engine = Clamp(GetVehicleEngineHealth(vehicle) / 1000.0, 0.0, 1.0)
 	local thrust = state.throttle * profile.thrust
-		* (cfg.MinPower + (1.0 - cfg.MinPower) * engine)
+		* (0.5 + 0.5 * engine)
 		* (1.0 - profile.thrustFade * Clamp(speed / profile.topSpeed, 0.0, 1.2))
 
 	local accel = LiftDirection(right, direction, up) * lift
@@ -255,13 +253,13 @@ PlaneUpdate = function(dt, input, preset, owner)
 	local over = speed - profile.vne
 	if (over > 0.0) then
 		local body = GetVehicleBodyHealth(vehicle)
-		if (body > cfg.BodyFloor) then
-			SetVehicleBodyHealth(vehicle, math_max(cfg.BodyFloor, body - over * cfg.Overspeed * dt))
+		if (body > 100.0) then
+			SetVehicleBodyHealth(vehicle, math_max(100.0, body - over * 4.0 * dt))
 		end
 	end
 
 	local buffet = Smoothstep(state.crit * 0.8, state.crit * 1.1, math_abs(effective)) * Smoothstep(10.0, profile.stallSpeed, speed)
 	local overspeed = Smoothstep(profile.vne * 0.95, profile.vne * 1.15, speed)
 
-	SetShake(state, math_max(buffet * cfg.StallShake, overspeed * cfg.OverspeedShake))
+	SetShake(state, math_max(buffet * 1.2, overspeed))
 end
