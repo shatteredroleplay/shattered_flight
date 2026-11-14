@@ -10,6 +10,20 @@ end, false)
 
 RegisterKeyMapping('+shattered_heli_look', 'Helikopter: fri kamera (håll)', 'keyboard', Config.FreeLookKey)
 
+local CAMERA_MODES <const> = { [0] = 1, [1] = 2, [2] = 4, [4] = 0 }
+local NEXT_CAMERA <const> = 0
+
+local current = 0
+
+RegisterCommand('shattered_flight_camera', function()
+	if (current == 0) then return end
+
+	local context = GetCamActiveViewModeContext()
+	SetCamViewModeForContext(context, CAMERA_MODES[GetCamViewModeForContext(context)] or 0)
+end, false)
+
+RegisterKeyMapping('shattered_flight_camera', 'Flyg: byt kameravy', 'keyboard', Config.CameraKey)
+
 local GetPilotVehicle = function()
 	local ped = PlayerPedId()
 	if (IsEntityDead(ped)) then return 0 end
@@ -31,7 +45,6 @@ local ScriptCamActive = function()
 	return GetRenderingCam() ~= -1
 end
 
-local current = 0
 local currentKind
 local lastRequest = 0
 
@@ -89,6 +102,8 @@ CreateThread(function()
 
 			local dt = Clamp(GetFrameTime(), 0.0, 0.1)
 			local look = freeLook or not IsUsingKeyboard(0)
+
+			DisableControlAction(0, NEXT_CAMERA, true)
 
 			if (plane) then
 				local animate = Config.AnimateSurfaces

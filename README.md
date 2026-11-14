@@ -11,6 +11,7 @@ Realistic flight controls for every helicopter and plane in FiveM. Made by [Shat
 - Optional flight assists: stability, envelope protection, turn coordination and auto-hover
 - Mouse, keyboard and gamepad support
 - Hold-to-free-look camera (default `Left Alt`)
+- Cycle camera distance like GTA's own camera (default `V`)
 - Per-aircraft tuning profiles
 
 ## Installation
@@ -32,6 +33,7 @@ Everything you need is in `config.lua`:
 | --- | --- |
 | `Debug` | Prints debug info to the F8 console |
 | `FreeLookKey` | Key to hold for free-look camera |
+| `CameraKey` | Key to cycle camera distance (near, mid, far, first person) |
 | `Controls` | Mouse sensitivity, invert Y, and whether mouse X controls roll or yaw |
 | `Assist` | Turn the flight assists on or off |
 | `Blacklist` | Vehicle models that keep GTA's default handling |
@@ -39,7 +41,7 @@ Everything you need is in `config.lua`:
 | `AnimateSurfaces` | Move the plane's control surfaces with your input |
 | `Planes` / `Profiles` | Tuning per plane / helicopter model |
 
-Players can rebind the free-look key in **Settings → Key Bindings → FiveM**.
+Players can rebind the free-look and camera keys in **Settings → Key Bindings → FiveM**.
 
 ## Support
 

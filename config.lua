@@ -3,6 +3,7 @@ Config = {}
 Config.Debug = false
 
 Config.FreeLookKey = 'LMENU'
+Config.CameraKey = 'V'
 
 Config.Controls = {
 	sensitivity = 0.5,
